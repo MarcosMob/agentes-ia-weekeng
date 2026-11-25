@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, status
@@ -29,7 +29,7 @@ app = FastAPI(
 @app.get("/api/events", response_model=list[EventResponse], status_code=status.HTTP_200_OK)
 def list_events() -> list[EventResponse]:
     """Lista todos os eventos cadastrados em ordem crescente de ID."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         rows = conn.execute(
             "SELECT id, title, speaker, capacity, created_at FROM events ORDER BY id ASC"
         ).fetchall()
@@ -39,22 +39,21 @@ def list_events() -> list[EventResponse]:
 @app.post("/api/events", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(payload: EventCreate) -> EventResponse:
     """Cadastra um novo evento na Semana Acadêmica."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn, conn:
         cursor = conn.execute(
             "INSERT INTO events (title, speaker, capacity) VALUES (?, ?, ?)",
-            (payload.title.strip(), payload.speaker.strip(), payload.capacity),
+            (payload.title, payload.speaker, payload.capacity),
         )
-        conn.commit()
         created = conn.execute(
             "SELECT id, title, speaker, capacity, created_at FROM events WHERE id = ?",
             (cursor.lastrowid,),
         ).fetchone()
 
-    if created is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao recuperar evento recém-criado.",
-        )
+        if created is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Erro ao recuperar evento recém-criado.",
+            )
 
     return EventResponse(**dict(created))
 

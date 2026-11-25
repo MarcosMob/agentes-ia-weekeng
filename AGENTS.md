@@ -75,7 +75,7 @@ pytest -q
 - `capacity` INTEGER NOT NULL CHECK (capacity > 0)
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
-**Tabela `registrations`** *(a ser implementada durante o workshop)*
+**Tabela `registrations`** *(criada pelo starter para as rotas do workshop)*
 - `id` INTEGER PK AUTOINCREMENT
 - `event_id` INTEGER FK → events(id)
 - `participant_name` TEXT NOT NULL
@@ -100,7 +100,7 @@ Ao implementar **novas funcionalidades completas**, siga este fluxo obrigatório
 
 1. **Consulte o schema atual** via MCP `sqlite` antes de qualquer implementação (`list_tables`, `describe_table`).
 2. **Delegue a implementação** ao subagente `dev-backend` (invoque via `invoke_subagent`).
-3. **Aguarde a conclusão** e confirme que `pytest` passou (o hook automático garante isso).
+3. **Aguarde a conclusão** e confirme o resultado do `pytest`. O hook automático roda a suíte após edições pelas ferramentas de arquivo configuradas.
 4. **Delegue a auditoria** ao subagente `qa-reviewer`, passando o `git diff` como contexto.
 5. **Responda ao usuário** apenas após receber o parecer do `qa-reviewer`.
 

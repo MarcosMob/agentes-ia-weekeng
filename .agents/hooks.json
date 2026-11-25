@@ -2,11 +2,11 @@
   "auto-pytest": {
     "PostToolUse": [
       {
-        "matcher": "write_file|edit_file|write_to_file|replace_file_content",
+        "matcher": "write_to_file|replace_file_content",
         "hooks": [
           {
             "type": "command",
-            "command": "pytest -q --tb=short 2>&1 | tail -20",
+            "command": "pytest -q >&2 && printf '{}\\n'",
             "timeout": 60
           }
         ]

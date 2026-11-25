@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,7 @@ from app.main import app
 
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     """Cria um TestClient isolado apontando para um banco SQLite temporário."""
     temp_db = tmp_path / "test_events.db"
     monkeypatch.setattr(database, "DB_PATH", temp_db)
@@ -34,7 +35,7 @@ def test_create_event_returns_201_and_persists(client: TestClient) -> None:
         "speaker": "João Pedro Souza",
         "capacity": 25,
     }
-    response = client.post("/api/events", json=payload)
+    response = client.post("/api/events", json={**payload, "title": f"  {payload['title']}  "})
     assert response.status_code == 201
 
     created = response.json()
@@ -42,6 +43,10 @@ def test_create_event_returns_201_and_persists(client: TestClient) -> None:
     assert created["speaker"] == payload["speaker"]
     assert created["capacity"] == payload["capacity"]
     assert isinstance(created["id"], int)
+
+    invalid = client.post("/api/events", json={**payload, "title": "   ", "capacity": 0})
+    assert invalid.status_code == 422
+    assert {error["loc"][-1] for error in invalid.json()["detail"]} == {"title", "capacity"}
 
     list_response = client.get("/api/events")
     assert list_response.status_code == 200

@@ -30,7 +30,7 @@ O desenvolvimento é dividido em etapas progressivas para mostrar na prática o 
 | **1. Agente Base**            | Tool Calling e Loop ReAct                         | Exploramos o repositório com o agente "cru" no terminal, observando o ciclo *Pensar → Executar Ferramenta → Observar → Corrigir*.                                                                                                                          |
 | **2. Context Engineering**    | `AGENTS.md` e `.agents/rules/`                | Estruturamos as regras fixas do repositório e regras modulares por tipo de arquivo (`globs`) para manter consistência sem poluir a janela de contexto.                                                                                                       |
 | **3. Skills**                 | `.agents/skills/*/SKILL.md`                     | Criamos a skill reutilizável `criar-endpoint` com um playbook passo a passo (schema → rota → testes), acionada automaticamente ou via `/criar-endpoint`.                                                                                                  |
-| **4. Hooks Determinísticos** | `.agents/hooks.json`                            | Diferenciamos instruções *probabilísticas* (prompts) de garantias *determinísticas* (código): configuramos um hook `PostToolUse` que roda `pytest` automaticamente após toda edição de arquivo.                                                  |
+| **4. Hooks Determinísticos** | `.agents/hooks.json`                            | Configuramos um hook `PostToolUse` que roda `pytest -q` depois de `write_to_file` e `replace_file_content`. |
 | **5. MCP + Hub-and-Spoke**    | `.agents/mcp_config.json` e `.agents/agents/` | Conectamos um servidor **MCP** local ao SQLite e dividimos o trabalho entre o **Hub** (Orquestrador) e dois **Spokes** com contextos isolados: `dev-backend` (implementa) e `qa-reviewer` (audita o `git diff` em modo somente leitura). |
 
 ### Arquitetura Hub-and-Spoke do Projeto
@@ -60,20 +60,26 @@ O desenvolvimento é dividido em etapas progressivas para mostrar na prática o 
 
 ```text
 .
+├── .gitignore
 ├── AGENTS.md                           # Contexto principal lido em toda sessão
+├── README.md
+├── requirements.txt
+├── task.md                             # Especificação do starter
 ├── app/
+│   ├── __init__.py
 │   ├── database.py                     # Conexão SQLite, criação de tabelas e seed
 │   ├── schemas.py                      # Modelos de validação Pydantic
 │   └── main.py                         # Endpoints FastAPI e servidor de estáticos
 ├── static/
 │   └── index.html                      # Interface web simples
 ├── tests/
+│   ├── __init__.py
 │   └── test_events.py                  # Testes automatizados (pytest)
 ├── mcp_server/
 │   └── sqlite_mcp.py                   # Servidor MCP local (FastMCP) para o SQLite
 └── .agents/
     ├── rules/
-    │   └── fastapi-rules.md            # Regras ativadas apenas ao editar app/*.py
+    │   └── fastapi-rules.md            # Regras para arquivos Python em app/
     ├── skills/
     │   └── criar-endpoint/
     │       └── SKILL.md                # Playbook reutilizável de criação de rotas
@@ -91,14 +97,16 @@ O desenvolvimento é dividido em etapas progressivas para mostrar na prática o 
 ### 1. Clonar o repositório e preparar o Python
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
-cd <PASTA_DO_PROJETO>
+git clone --branch preparacao/workshop https://github.com/MarcosMob/agentes-ia-weekeng.git
+cd agentes-ia-weekeng
 
 python3 -m venv .venv
 source .venv/bin/activate       # No Windows (Git Bash): source .venv/Scripts/activate
 
 pip install -r requirements.txt
 ```
+
+O projeto usa o SDK MCP 1.x para manter a API `FastMCP` usada no exercício.
 
 ### 2. Validar se o projeto base está funcionando
 
@@ -112,7 +120,7 @@ uvicorn app.main:app --reload
 
 ### 3. Iniciar o Antigravity CLI (`agy`)
 
-Em um segundo terminal (com o ambiente `.venv` ativado), inicie o agente na raiz do projeto:
+Com a aplicação iniciada para criar `app.db`, abra um segundo terminal na raiz do projeto, ative a `.venv` e inicie o agente. O servidor MCP usa o `python3` desse ambiente.
 
 ```bash
 agy
@@ -122,20 +130,12 @@ agy
 
 ## Comandos Úteis no `agy` Durante a Aula
 
-- `/usage` — Verifica o consumo da sua cota gratuita na janela de 5 horas.
+- `/usage` — Consulta o uso da cota do modelo.
 - `/mcp` — Lista e testa a conexão com o servidor MCP do SQLite.
+- `/hooks` — Confere se o grupo `auto-pytest` foi carregado.
 - `/criar-endpoint <tarefa>` — Invoca manualmente a Skill de criação de endpoints.
 - `/agents` — Abre o painel ao vivo dos subagentes (pressione `Enter` em um Spoke para inspecionar a janela de contexto isolada dele).
 
----
+No painel `/mcp`, confira se `sqlite` está ativo. Para validar o acesso ao banco, peça ao agente para executar `list_tables` e `describe_table` para `events` e `registrations`.
 
-## Branches de Checkpoint (Resgate Rápido)
-
-Se você se perder em algum passo ou tiver erro de configuração durante o hands-on, avance direto para o estado pronto da etapa atual usando `git checkout`:
-
-- `main` — Apenas a aplicação base (sem a pasta `.agents/`).
-- `passo-1-contexto` — Com `AGENTS.md` e `.agents/rules/`.
-- `passo-2-skill` — Com a Skill `criar-endpoint`.
-- `passo-3-hook` — Com o Hook determinístico de testes (`hooks.json`).
-- `passo-4-mcp` — Com o servidor MCP SQLite configurado.
-- `final` — Projeto completo com orquestração Hub-and-Spoke (`dev-backend` + `qa-reviewer`).
+O `agy` 1.5.17 lê `globs` como texto. O `dev-backend` recebe `sqlite` via `inheritMcp` da configuração do workspace. [Regras do Antigravity](https://antigravity.google/docs/rules-workflows/) · [Configuração de subagentes](https://antigravity.google/docs/build-plugins#subagents)

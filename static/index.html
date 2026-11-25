@@ -160,15 +160,15 @@
         <div class="form-grid">
           <div>
             <label for="title">Título</label>
-            <input id="title" name="title" type="text" required placeholder="Ex.: Agentes Autônomos na Prática" />
+            <input id="title" name="title" type="text" maxlength="150" required placeholder="Ex.: Agentes Autônomos na Prática" />
           </div>
           <div>
             <label for="speaker">Palestrante</label>
-            <input id="speaker" name="speaker" type="text" required placeholder="Ex.: Maria Silva" />
+            <input id="speaker" name="speaker" type="text" maxlength="120" required placeholder="Ex.: Maria Silva" />
           </div>
           <div>
             <label for="capacity">Capacidade</label>
-            <input id="capacity" name="capacity" type="number" min="1" required placeholder="Ex.: 50" />
+            <input id="capacity" name="capacity" type="number" min="1" max="10000" required placeholder="Ex.: 50" />
           </div>
         </div>
         <div class="actions">
@@ -262,7 +262,10 @@
 
         if (!response.ok) {
           const errorBody = await response.json().catch(() => ({}));
-          throw new Error(errorBody.detail || "Não foi possível cadastrar o evento.");
+          const fallback = response.status === 422
+            ? "Revise o título, o palestrante e a capacidade do evento."
+            : "Não foi possível cadastrar o evento.";
+          throw new Error(typeof errorBody.detail === "string" ? errorBody.detail : fallback);
         }
 
         form.reset();

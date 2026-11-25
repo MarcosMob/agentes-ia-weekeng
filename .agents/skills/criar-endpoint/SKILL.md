@@ -35,7 +35,7 @@ Edite `app/schemas.py`:
 
 Edite `app/main.py` (ou crie `app/routers/<recurso>.py` para routers dedicados):
 - Use `@app.<método>("/api/<recurso>", response_model=..., status_code=status.HTTP_<X>_<Y>)`.
-- Obtenha conexão com `get_connection()` dentro de `with` para garantir fechamento.
+- Feche a conexão com `with closing(get_connection()) as conn` e use `with conn` para delimitar transações de escrita.
 - Use **sempre** queries parametrizadas com `?`.
 - Trate erros com `HTTPException` e `detail` descritivo.
 
@@ -43,7 +43,7 @@ Edite `app/main.py` (ou crie `app/routers/<recurso>.py` para routers dedicados):
 
 Edite (ou crie) `tests/test_<recurso>.py`:
 - Mínimo de **2 testes**: um de sucesso (happy path) e um de erro/edge case.
-- Use a fixture `client` com banco temporário (`tmp_path`).
+- Use o padrão da fixture `client` de `tests/test_events.py`, com banco temporário via `tmp_path`.
 - Verifique: status code, estrutura do JSON de resposta, persistência no banco.
 
 Exemplos de edge cases para inscrições:
@@ -59,7 +59,7 @@ Rode os testes e confirme que passam:
 pytest -v
 ```
 
-O hook `PostToolUse` já roda `pytest -q` automaticamente após edições de arquivo. Se falhar, leia o output, corrija e re-rode.
+O hook `PostToolUse` roda `pytest -q` após edições por `write_to_file` e `replace_file_content`. Se falhar, leia o output, corrija e re-rode.
 
 ## Checklist Final
 

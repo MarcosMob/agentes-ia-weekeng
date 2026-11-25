@@ -6,8 +6,9 @@ description: >-
   git diff antes de responder ao usuário.
 subagent: true
 mainAgent: false
+inheritMcp: false
 tools:
-  - read_file
+  - view_file
   - grep_search
   - run_command
 ---

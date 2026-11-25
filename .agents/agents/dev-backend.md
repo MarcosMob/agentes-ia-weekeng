@@ -7,16 +7,15 @@ description: >-
 subagent: true
 mainAgent: false
 tools:
-  - read_file
-  - write_file
-  - edit_file
+  - view_file
+  - write_to_file
+  - replace_file_content
   - grep_search
   - find_by_name
   - run_command
 skills:
-  - criar-endpoint
-mcpServers:
-  - sqlite
+  - skills/criar-endpoint
+inheritMcp: true
 ---
 
 # dev-backend — Subagente de Implementação Backend
