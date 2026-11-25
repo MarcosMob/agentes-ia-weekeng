@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "python3",
+      "args": ["mcp_server/sqlite_mcp.py"]
+    }
+  }
+}

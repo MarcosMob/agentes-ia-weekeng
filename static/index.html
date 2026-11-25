@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semana Acadêmica — Eventos</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --border: #e5e7eb;
+      --success: #047857;
+      --error: #b91c1c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.25);
+      border-color: var(--primary);
+    }
+
+    .actions {
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.65rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    .feedback {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .feedback.success { color: var(--success); }
+    .feedback.error { color: var(--error); }
+
+    .events-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .event-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      background: #fafafa;
+    }
+
+    .event-item h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .event-meta {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Semana Acadêmica — Gerenciador de Eventos</h1>
+      <p>Consulte a programação e cadastre novas palestras ou workshops.</p>
+    </header>
+
+    <section class="card">
+      <h2>Cadastrar Novo Evento</h2>
+      <form id="event-form">
+        <div class="form-grid">
+          <div>
+            <label for="title">Título</label>
+            <input id="title" name="title" type="text" required placeholder="Ex.: Agentes Autônomos na Prática" />
+          </div>
+          <div>
+            <label for="speaker">Palestrante</label>
+            <input id="speaker" name="speaker" type="text" required placeholder="Ex.: Maria Silva" />
+          </div>
+          <div>
+            <label for="capacity">Capacidade</label>
+            <input id="capacity" name="capacity" type="number" min="1" required placeholder="Ex.: 50" />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Cadastrar Evento</button>
+          <span id="form-feedback" class="feedback" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Eventos Cadastrados</h2>
+      <div id="events-container" class="events-list">
+        <p class="empty-state">Carregando eventos...</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("event-form");
+    const feedback = document.getElementById("form-feedback");
+    const eventsContainer = document.getElementById("events-container");
+
+    async function loadEvents() {
+      try {
+        const response = await fetch("/api/events");
+        if (!response.ok) {
+          throw new Error("Falha ao buscar eventos.");
+        }
+        const events = await response.json();
+        renderEvents(events);
+      } catch (err) {
+        eventsContainer.innerHTML = "";
+        const p = document.createElement("p");
+        p.className = "feedback error";
+        p.textContent = err.message;
+        eventsContainer.appendChild(p);
+      }
+    }
+
+    function renderEvents(events) {
+      eventsContainer.innerHTML = "";
+      if (!events.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty-state";
+        empty.textContent = "Nenhum evento cadastrado ainda.";
+        eventsContainer.appendChild(empty);
+        return;
+      }
+
+      for (const event of events) {
+        const card = document.createElement("article");
+        card.className = "event-item";
+
+        const title = document.createElement("h3");
+        title.textContent = event.title;
+
+        const speaker = document.createElement("p");
+        speaker.className = "event-meta";
+        speaker.textContent = `Palestrante: ${event.speaker}`;
+
+        const capacity = document.createElement("p");
+        capacity.className = "event-meta";
+        capacity.textContent = `Vagas: ${event.capacity}`;
+
+        const createdAt = document.createElement("p");
+        createdAt.className = "event-meta";
+        createdAt.textContent = `ID #${event.id} • Criado em ${event.created_at}`;
+
+        card.append(title, speaker, capacity, createdAt);
+        eventsContainer.appendChild(card);
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      feedback.textContent = "";
+      feedback.className = "feedback";
+
+      const payload = {
+        title: document.getElementById("title").value.trim(),
+        speaker: document.getElementById("speaker").value.trim(),
+        capacity: Number(document.getElementById("capacity").value),
+      };
+
+      try {
+        const response = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.detail || "Não foi possível cadastrar o evento.");
+        }
+
+        form.reset();
+        feedback.textContent = "Evento cadastrado com sucesso!";
+        feedback.className = "feedback success";
+        await loadEvents();
+      } catch (err) {
+        feedback.textContent = err.message;
+        feedback.className = "feedback error";
+      }
+    });
+
+    loadEvents();
+  </script>
+</body>
+</html>
