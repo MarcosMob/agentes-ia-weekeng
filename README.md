@@ -62,6 +62,7 @@ O desenvolvimento é dividido em etapas progressivas para mostrar na prática o 
 .
 ├── .gitignore
 ├── AGENTS.md                           # Contexto principal lido em toda sessão
+├── dados_exemplo.sql                   # Eventos e inscrições fictícios para a aula
 ├── README.md
 ├── requirements.txt
 ├── task.md                             # Especificação do starter
@@ -125,6 +126,26 @@ Com a aplicação iniciada para criar `app.db`, abra um segundo terminal na raiz
 ```bash
 agy
 ```
+
+### Carregar dados de exemplo
+
+Copie e execute o bloco abaixo na raiz do projeto. Ele inicializa o `app.db` se necessário e aplica `dados_exemplo.sql` com o SQLite do Python.
+
+```bash
+python - <<'PY'
+from contextlib import closing
+from pathlib import Path
+
+from app.database import get_connection, init_db, seed_data
+
+init_db()
+seed_data()
+with closing(get_connection()) as conn:
+    conn.executescript(Path("dados_exemplo.sql").read_text(encoding="utf-8"))
+PY
+```
+
+Os eventos com prefixo `[Demo]` cobrem três cenários para o exercício de inscrições. Um está lotado, um tem vagas disponíveis e um ainda está sem inscritos. Executar o bloco novamente preserva os dados existentes e evita duplicatas.
 
 ---
 
